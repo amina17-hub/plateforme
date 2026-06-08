@@ -7,6 +7,7 @@ use App\Models\ArtisanAvailability;
 use App\Models\Reservation;
 use App\Notifications\NewReservationNotification;
 use App\Notifications\ReservationStatusNotification;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class ReservationController extends Controller
@@ -45,20 +46,42 @@ class ReservationController extends Controller
             ], 422);
         }
 
-        $reservation = Reservation::create([
-            'client_user_id' => $request->user()->id,
-            'artisan_id' => $artisan->id,
-            'artisan_user_id' => $artisan->user_id,
-            'client_name' => $request->user()->name,
-            'artisan_name' => $artisan->name,
-            'service_type' => $artisan->service_type,
-            'city' => $artisan->commune ?: $artisan->city,
-            'quoted_price' => $artisan->price ?? null,
-            'reservation_date' => $validated['reservation_date'],
-            'reservation_time' => $validated['reservation_time'],
-            'notes' => $validated['notes'] ?? '',
-            'status' => 'en_attente',
-        ]);
+        $alreadyReserved = Reservation::query()
+            ->where('client_user_id', $request->user()->id)
+            ->where('artisan_id', $artisan->id)
+            ->whereDate('reservation_date', $validated['reservation_date'])
+            ->exists();
+
+        if ($alreadyReserved) {
+            return response()->json([
+                'message' => 'Vous avez deja reserve cet artisan pour cette date.',
+            ], 422);
+        }
+
+        try {
+            $reservation = Reservation::create([
+                'client_user_id' => $request->user()->id,
+                'artisan_id' => $artisan->id,
+                'artisan_user_id' => $artisan->user_id,
+                'client_name' => $request->user()->name,
+                'artisan_name' => $artisan->name,
+                'service_type' => $artisan->service_type,
+                'city' => $artisan->commune ?: $artisan->city,
+                'quoted_price' => $artisan->price ?? null,
+                'reservation_date' => $validated['reservation_date'],
+                'reservation_time' => $validated['reservation_time'],
+                'notes' => $validated['notes'] ?? '',
+                'status' => 'en_attente',
+            ]);
+        } catch (QueryException $exception) {
+            if (in_array((string) $exception->getCode(), ['23000', '23505'], true)) {
+                return response()->json([
+                    'message' => 'Vous avez deja reserve cet artisan pour cette date.',
+                ], 422);
+            }
+
+            throw $exception;
+        }
 
         if ($reservation->artisanUser) {
             $reservation->artisanUser->notify(new NewReservationNotification($reservation));

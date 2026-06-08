@@ -22,7 +22,7 @@
     <div class="absolute inset-x-0 top-0 -z-10 h-[440px] bg-[radial-gradient(circle_at_top_left,rgba(13,148,136,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.16),transparent_24%)]"></div>
 
     <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <header class="mb-6 flex flex-col gap-4 rounded-[30px] border border-white/70 bg-white/80 px-5 py-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur md:flex-row md:items-center md:justify-between md:px-7">
+        <header class="relative z-[1000] mb-6 flex flex-col gap-4 rounded-[30px] border border-white/70 bg-white/80 px-5 py-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur md:flex-row md:items-center md:justify-between md:px-7">
             <div>
                 <p class="text-[11px] font-extrabold uppercase tracking-[0.28em] text-teal-700">Espace client</p>
 <h1 class="mt-1 text-2xl font-extrabold text-slate-900">Bonjour {{ auth()->user()->name }}</h1>                
@@ -30,12 +30,12 @@
             </div>
 
             <div class="relative flex flex-wrap items-center gap-3">
-                <details class="group relative inline-block text-left">
+                <details class="group relative z-[1001] inline-block text-left">
                     <summary class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:border-teal-300 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-400">
                         Notifications
                         <span id="notifications-count-badge" class="rounded-full bg-rose-600 px-2 py-0.5 text-xs font-extrabold text-white">0</span>
                     </summary>
-                    <div class="absolute right-0 z-40 mt-2 w-80 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
+                    <div class="absolute right-0 z-[1002] mt-2 w-80 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
                         <div class="mb-3 flex items-center justify-between gap-3">
                             <p class="text-sm font-extrabold text-slate-900">Notifications</p>
                             <button id="notifications-read-button" type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:border-teal-300 hover:text-teal-700">Lu</button>
@@ -43,15 +43,15 @@
                         <div id="notifications-list" class="grid max-h-80 gap-2 overflow-y-auto pr-1"></div>
                     </div>
                 </details>
-                <details class="group relative inline-block text-left">
+                <details class="group relative z-[1001] inline-block text-left">
                     <summary class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:border-slate-300 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-400">
                         Menu
                         <svg class="h-4 w-4 text-slate-600 transition-transform duration-200 group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </summary>
-                    <div class="mt-2 w-80 rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
-                        <button type="button" onclick="this.closest('details').removeAttribute('open'); setActiveSection('reservations')" class="mb-3 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-slate-100">
+                    <div class="absolute right-0 z-[1002] mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+                        <button id="client-menu-reservations" type="button" disabled class="mb-3 flex w-full cursor-not-allowed items-center justify-between rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-left text-sm font-semibold text-slate-400 opacity-70">
                             <span>Reservations</span>
                             <span id="reservations-count-badge" class="rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white">0</span>
                         </button>
@@ -111,7 +111,7 @@
                     <p class="text-sm font-extrabold">Profils</p>
                     <p class="mt-1 text-xs">Consulter les resultats</p>
                 </button>
-                <button type="button" data-section-button="reservations" class="rounded-2xl px-4 py-3 text-left transition">
+                <button type="button" data-section-button="reservations" disabled class="cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-left text-slate-400 opacity-70">
                     <p class="text-sm font-extrabold">Reservations</p>
                     <p class="mt-1 text-xs">Planifier un rendez-vous</p>
                 </button>
@@ -929,7 +929,7 @@ function formatAverageRating(value) {
 
 function normalizeReservation(reservation) {
     return {
-        id: String(firstDefined(reservation?.id, Date.now())),
+        id: String(firstDefined(reservation?.id, "")),
         clientName: firstDefined(reservation?.clientName, reservation?.client_name, currentUser),
         artisanName: firstDefined(reservation?.artisanName, reservation?.artisan_name, "Artisan"),
         artisanId: firstDefined(reservation?.artisanId, reservation?.artisan_id, null),
@@ -970,6 +970,39 @@ function sortReservations(reservations) {
         const leftKey = left.reservationDate + "T" + left.reservationTime;
         const rightKey = right.reservationDate + "T" + right.reservationTime;
         return leftKey.localeCompare(rightKey);
+    });
+}
+
+function uniqueReservations(reservations) {
+    const seen = new Set();
+
+    return reservations.filter(function (reservation) {
+        const key = reservation.id
+            ? "id:" + reservation.id
+            : [
+                reservation.artisanId,
+                reservation.reservationDate,
+                reservation.reservationTime,
+                reservation.notes,
+            ].join("|");
+
+        if (seen.has(key)) {
+            return false;
+        }
+
+        seen.add(key);
+        return true;
+    });
+}
+
+function hasReservationForSelectedArtisanDate(dateKey) {
+    if (!state.selectedArtisan || !dateKey) {
+        return false;
+    }
+
+    return state.reservations.some(function (reservation) {
+        return String(reservation.artisanId) === String(state.selectedArtisan.artisan_id)
+            && reservation.reservationDate === dateKey;
     });
 }
 
@@ -1194,6 +1227,10 @@ function syncArtisanRatingAcrossState(artisanId, averageRating) {
 }
 
 function setActiveSection(sectionId) {
+    if (sectionId === "reservations" && !state.selectedArtisan) {
+        return;
+    }
+
     state.activeSection = sectionId;
     const shouldShowSearchLayout = sectionId === "search" || sectionId === "map";
     dom.sectionSearch.classList.toggle("hidden", !shouldShowSearchLayout);
@@ -1203,13 +1240,7 @@ function setActiveSection(sectionId) {
     dom.sectionChat.classList.toggle("hidden", sectionId !== "chat");
     dom.sectionReservations.classList.toggle("hidden", sectionId !== "reservations");
 
-    dom.sectionButtons.forEach(function (button) {
-        const isActive = button.dataset.sectionButton === sectionId;
-        button.className = isActive
-            ? "rounded-2xl px-4 py-3 text-left transition bg-slate-900 text-white shadow-[0_16px_35px_rgba(15,23,42,0.18)]"
-            : "rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-slate-700 transition hover:border-teal-300 hover:text-teal-700";
-        button.querySelector("p:last-child").className = isActive ? "mt-1 text-xs text-slate-200" : "mt-1 text-xs text-slate-500";
-    });
+    renderSectionNavigation();
 
     if (shouldShowSearchLayout && map) {
         window.setTimeout(function () {
@@ -1220,6 +1251,23 @@ function setActiveSection(sectionId) {
             }
         }, 120);
     }
+}
+
+function renderSectionNavigation() {
+    dom.sectionButtons.forEach(function (button) {
+        const sectionId = state.activeSection;
+        const isActive = button.dataset.sectionButton === sectionId;
+        const isDisabled = button.dataset.sectionButton === "reservations" && !state.selectedArtisan;
+        button.disabled = isDisabled;
+        button.className = isDisabled
+            ? "cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-left text-slate-400 opacity-70"
+            : (isActive
+                ? "rounded-2xl bg-slate-900 px-4 py-3 text-left text-white shadow-[0_16px_35px_rgba(15,23,42,0.18)] transition"
+                : "rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-slate-700 transition hover:border-teal-300 hover:text-teal-700");
+        button.querySelector("p:last-child").className = isDisabled
+            ? "mt-1 text-xs text-slate-400"
+            : (isActive ? "mt-1 text-xs text-slate-200" : "mt-1 text-xs text-slate-500");
+    });
 }
 
 function showPreparedRequests() {
@@ -1300,6 +1348,7 @@ function renderNotifications() {
 }
 
 function renderHeaderStats() {
+    renderSectionNavigation();
     dom.requestsCountBadge.textContent = state.requestsCount + " demande" + (state.requestsCount > 1 ? "s" : "") + " preparee" + (state.requestsCount > 1 ? "s" : "");
     dom.reservationsCountBadge.textContent = state.reservations.length + " reservation" + (state.reservations.length > 1 ? "s" : "");
     dom.heroResultsCount.textContent = String(state.artisans.length);
@@ -1307,6 +1356,12 @@ function renderHeaderStats() {
     dom.heroPositionCount.textContent = state.position ? "ok" : (state.geoPending ? "..." : "non");
     if (dom.clientMenuReservationsCount) {
         dom.clientMenuReservationsCount.textContent = String(state.reservations.length);
+    }
+    if (dom.clientMenuReservations) {
+        dom.clientMenuReservations.disabled = !state.selectedArtisan;
+        dom.clientMenuReservations.className = state.selectedArtisan
+            ? "mb-3 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
+            : "mb-3 flex w-full cursor-not-allowed items-center justify-between rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-left text-sm font-semibold text-slate-400 opacity-70";
     }
     if (dom.clientMenuRequestsCount) {
         dom.clientMenuRequestsCount.textContent = String(state.requestsCount);
@@ -1874,7 +1929,10 @@ function renderReservations() {
     const calendarDays = buildCalendarDays(state.calendarCursor, state.reservations, selectedDate);
     const weekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
     const selectedAvailability = getSelectedArtisanAvailabilityMeta(selectedDate);
-    const canSubmitReservation = Boolean(state.selectedArtisan) && selectedAvailability.kind === "available";
+    const alreadyReservedForSelectedDay = hasReservationForSelectedArtisanDate(selectedDate);
+    const canSubmitReservation = Boolean(state.selectedArtisan)
+        && selectedAvailability.kind === "available"
+        && !alreadyReservedForSelectedDay;
 
     dom.reservationsContent.innerHTML = `
         <div class="space-y-5">
@@ -1936,7 +1994,7 @@ function renderReservations() {
 
             <div class="flex flex-wrap gap-3">
                 <button id="submit-reservation-button" type="button" ${canSubmitReservation ? "" : "disabled"} class="rounded-full bg-emerald-600 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300">
-                    Confirmer la reservation
+                    ${alreadyReservedForSelectedDay ? "Deja reserve pour ce jour" : "Confirmer la reservation"}
                 </button>
                 <button id="reservation-reset-button" type="button" class="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-slate-300">
                     Reinitialiser
@@ -2729,6 +2787,13 @@ async function submitReservation() {
         return;
     }
 
+    if (hasReservationForSelectedArtisanDate(state.reservationDate)) {
+        state.error = "Vous avez deja reserve cet artisan pour cette date.";
+        state.success = "";
+        renderAlerts();
+        return;
+    }
+
     const reservationDateTime = state.reservationDate + "T" + state.reservationTime;
 
     if (reservationDateTime < getCurrentDateTimeKey()) {
@@ -2862,7 +2927,8 @@ async function syncReservationData() {
         "Impossible de charger vos reservations."
     );
 
-    state.reservations = sortReservations((Array.isArray(reservations) ? reservations : []).map(normalizeReservation));
+    const normalizedReservations = (Array.isArray(reservations) ? reservations : []).map(normalizeReservation);
+    state.reservations = sortReservations(uniqueReservations(normalizedReservations));
 
     if (!state.reservationDate) {
         state.reservationDate = getLocalDateValue(new Date());
@@ -3625,8 +3691,14 @@ function initEvents() {
 
     if (dom.clientMenuReservations) {
         dom.clientMenuReservations.addEventListener("click", function () {
+            const menu = dom.clientMenuReservations.closest("details");
+            if (menu) {
+                menu.removeAttribute("open");
+            }
             setActiveSection("reservations");
-            dom.clientActionsMenu.classList.add("hidden");
+            if (dom.clientActionsMenu) {
+                dom.clientActionsMenu.classList.add("hidden");
+            }
         });
     }
 

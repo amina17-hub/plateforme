@@ -112,4 +112,49 @@ class ArtisanAvailabilityControllerTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('reservationDate', now()->addDays(4)->toDateString());
     }
+
+    public function test_client_can_only_book_the_same_artisan_once_per_day(): void
+    {
+        $artisanUser = User::create([
+            'name' => 'Artisan Unique',
+            'email' => 'artisan-unique@example.com',
+            'password' => Hash::make('secret123'),
+            'role' => 'artisan',
+        ]);
+
+        $clientUser = User::create([
+            'name' => 'Client Unique',
+            'email' => 'client-unique@example.com',
+            'password' => Hash::make('secret123'),
+            'role' => 'client',
+        ]);
+
+        $artisan = Artisan::create([
+            'user_id' => $artisanUser->id,
+            'name' => 'Artisan Unique',
+            'service_type' => 'Plomberie',
+            'city' => 'Skikda',
+            'commune' => 'Skikda',
+        ]);
+
+        $reservationDate = now()->addDays(5)->toDateString();
+
+        $this->actingAs($clientUser)->postJson(route('client.reservations.store'), [
+            'artisan_id' => $artisan->id,
+            'reservation_date' => $reservationDate,
+            'reservation_time' => '09:00',
+        ])->assertCreated();
+
+        $this->actingAs($clientUser)->postJson(route('client.reservations.store'), [
+            'artisan_id' => $artisan->id,
+            'reservation_date' => $reservationDate,
+            'reservation_time' => '15:00',
+        ])
+            ->assertStatus(422)
+            ->assertJson([
+                'message' => 'Vous avez deja reserve cet artisan pour cette date.',
+            ]);
+
+        $this->assertDatabaseCount('reservations', 1);
+    }
 }
