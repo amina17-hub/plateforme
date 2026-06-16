@@ -9,19 +9,18 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 import itertools
 import os
 from joblib import dump
-
+#vérifier si l'import de visualisation existe
 try:
     VISUALIZATION_AVAILABLE = True
 except ImportError:
     VISUALIZATION_AVAILABLE = False
-
+#creation du dossier model si n'existe pas
 os.makedirs("models", exist_ok=True)
 
 # ─────────────────────────────────────────────
 # 1. CHARGEMENT & PRÉTRAITEMENT
 # ─────────────────────────────────────────────
-file_name = "../skikda_unified_dataset2.csv"
-
+file_name = "storage/skikda_unified_dataset2.csv"
 # Dataset complet pour recommandations
 df_full = pd.read_csv(file_name, encoding="utf-8-sig").copy()
 
@@ -35,8 +34,15 @@ text_cols = [
     "city",
     "commune",
 ]
+# Parcourir chaque colonne textuelle
 for col in text_cols:
+    # Vérifier que la colonne existe dans le DataFrame
     if col in df_full.columns:
+        # Nettoyage des données textuelles :
+        # - Remplacer les valeurs manquantes par une chaîne vide
+        # - Convertir toutes les valeurs en chaînes de caractères
+        # - Normaliser les caractères Unicode (NFKC)
+        # - Supprimer les espaces inutiles au début et à la fin
         df_full[col] = (
             df_full[col]
             .fillna("")
@@ -46,17 +52,24 @@ for col in text_cols:
         )
 
 # Nettoyage numérique
+# Conversion des colonnes numériques en type numérique
+# Les valeurs non convertibles sont remplacées par NaN
 numeric_cols = ["price", "rating", "latitude", "longitude"]
 for col in numeric_cols:
     if col in df_full.columns:
         df_full[col] = pd.to_numeric(df_full[col], errors="coerce")
 
 # Supprimer lignes invalides
+## Suppression des lignes contenant des valeurs manquantes
+# dans les colonnes indispensables à la recommandation
 df_full = df_full.dropna(
     subset=["service_type", "commune", "latitude", "longitude"]
 ).copy()
 
 # Remplissage valeurs manquantes
+## Imputation des valeurs manquantes de la colonne 'price'
+# Remplacement d'abord par la médiane du même type de service par exp 100 150 160 ndiw 150,
+# puis par la médiane globale si nécessaire
 if "price" in df_full.columns:
     df_full["price"] = df_full["price"].fillna(
         df_full.groupby("service_type")["price"].transform("median")
@@ -70,6 +83,9 @@ if "rating" in df_full.columns:
     df_full["rating"] = df_full["rating"].fillna(df_full["rating"].median())
 
 # Dataset pour entraînement causal
+## Création d'un dataset dédié à l'analyse causale
+# Suppression des colonnes non pertinentes pour l'entraînement des modèles
+# (identifiants, informations textuelles, coordonnées géographiques, dates, etc.)
 df = df_full.drop(
     columns=[
         "id",
@@ -87,83 +103,118 @@ df = df_full.drop(
     ],
     errors="ignore",
 ).copy()
-
+# Encodage des variables catégorielles en valeurs numériques
+# afin qu'elles puissent être utilisées par les modèles de Machine Learning
 categorical_features = ["service_type", "commune"]
 for feature in categorical_features:
     df[feature] = df[feature].astype("category").cat.codes
-
+# Calcul de la médiane des prix
 median_price = df["price"].median()
 df["low_medium_price"] = (df["price"] <= median_price).astype(int)
-
+# Création de la variable de traitement (Treatment)
+# 1 : prix faible ou moyen
+# 0 : prix élevé
 T = "low_medium_price"
 target_feature = "rating"
 features_to_adjust = ["service_type", "commune"]
+# Construction du dataset final contenant :
+# - les variables de confusion
+# - la variable de traitement
+# - la variable résultat
 df = df[features_to_adjust + [T, target_feature]]
 
 # ─────────────────────────────────────────────
 # 2. FONCTIONS UTILITAIRES
+# Fonction d'évaluation d'un modèle Random Forest Regressor
+# Sépare les données en ensemble d'entraînement (80%)
+# et de test (20%), entraîne le modèle puis calcule
+# l'erreur quadratique moyenne (MSE) sur les deux ensembles.
 # ─────────────────────────────────────────────
 def evaluate(X, y, extra=""):
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
+    ## Initialisation du modèle Random Forest Regressor
     model = RandomForestRegressor(max_depth=20, random_state=123)
+     # Entraînement du modèle
     model.fit(X_train, y_train)
-
+# Prédiction sur les données d'entraînement
     y_pred_train = model.predict(X_train)
+     # Calcul et affichage de l'erreur d'entraînement (MSE)
     print(f"{extra} Train error: {np.mean((y_train - y_pred_train) ** 2):.4f}")
-
+ # Prédiction sur les données de test
     y_pred_test = model.predict(X_test)
+     # Calcul et affichage de l'erreur de test (MSE)
     print(f"{extra} Test error:  {np.mean((y_test - y_pred_test) ** 2):.4f}")
 
+# Fonction de préparation des données pour l'analyse causale
+# Sépare le dataset en groupe traité (T=1) et groupe contrôle (T=0)
+# puis extrait les variables explicatives (X) et la variable résultat (y).
 
 def get_data(df, T):
+     # Copie du DataFrame original
     curr_df = df.copy()
-    T_ = curr_df[T]
 
+    # Variable de traitement
+    T_ = curr_df[T]
+ # Séparation des individus traités et non traités
     treated = curr_df[curr_df[T] == 1]
     control = curr_df[curr_df[T] == 0]
-
+ # Variables explicatives et variable résultat pour l'ensemble complet
     X = curr_df.drop([T, target_feature], axis="columns")
     y = curr_df[target_feature]
-
+# Variables explicatives et résultat pour le groupe traité
     X_treated = treated.drop([T, target_feature], axis="columns")
     y_treated = treated[target_feature]
-
+ # Variables explicatives et résultat pour le groupe contrôle
     X_control = control.drop([T, target_feature], axis="columns")
     y_control = control[target_feature]
-
+# Retour des différents jeux de données
     return X, y, X_treated, y_treated, X_control, y_control, T_
 
-
+# Fonction de nettoyage des observations
+# Supprime les individus dont la probabilité estiméee
+# est égale à la valeur du traitement afin d'éviter
+# des problèmes numériques dans certains estimateurs causaux.
 def clean(e, y, treatment):
+    # Recherche des indices à supprimer
     remove = np.where(e == treatment)
+     # Suppression des probabilités concernées
     e = np.delete(e, remove)
+     # Conversion de y en tableau numpy
     y = y.to_numpy()
+    # Suppression des observations correspondantes
     y = np.delete(y, remove)
     return e, y
 
 
 # ─────────────────────────────────────────────
 # 3. CALCUL DES ATE
+## Dictionnaire pour stocker les ATE calculés
 # ─────────────────────────────────────────────
 ATE = {}
 
 # Naïf
+# Calcul de la moyenne du résultat (rating) pour le groupe traité
 treated_outcome = np.mean(df[df[T] == 1][target_feature])
+ #Calcul de la moyenne du résultat pour le groupe contrôle
 control_outcome = np.mean(df[df[T] == 0][target_feature])
+# Estimation naïve de l'effet moyen du traitement
 ATE["naive"] = round(treated_outcome - control_outcome, 4)
 print(f"Naive ATE: {ATE['naive']}")
 
 # IPW RF
+# Préparation des données
 X, y, X_treated, y_treated, X_control, y_control, T_ = get_data(df, T)
+# Nombre total d'observations
 n = len(X)
-
+# Entraînement du modèle Random Forest pour estimer le score de propension
 rf_classifier = RandomForestClassifier(max_depth=20, random_state=123)
 rf_classifier.fit(X, T_)
-
+# Estimation des probabilités d'appartenir au groupe traité
 e_t = rf_classifier.predict_proba(X_treated)[:, 1]
 e_c = rf_classifier.predict_proba(X_control)[:, 1]
+# Nettoyage des observations problématiques
 e_t, y_treated_clean = clean(e_t, y_treated, 0)
 e_c, y_control_clean = clean(e_c, y_control, 1)
 
@@ -358,3 +409,106 @@ if VISUALIZATION_AVAILABLE:
     plt.tight_layout()
     plt.savefig("ate_visualization.png")
     plt.close()
+
+# ─────────────────────────────────────────────
+# VISUALISATION DU DATASET CAUSAL
+# ─────────────────────────────────────────────
+
+# Sauvegarder le dataset causal
+df.to_csv(
+    "causal_dataset.csv",
+    index=False,
+    encoding="utf-8-sig"
+)
+
+print("\nDataset causal sauvegardé : causal_dataset.csv")
+
+# Informations générales
+print("\n========== DATASET CAUSAL ==========")
+
+print("Shape :", df.shape)
+
+print("\nColonnes :")
+print(df.columns.tolist())
+
+print("\nPremières lignes :")
+print(df.head())
+
+print("\nStatistiques :")
+print(df.describe())
+
+
+# ─────────────────────────────────────────────
+# Distribution of Rating (Outcome)
+# ─────────────────────────────────────────────
+
+print("\nRating")
+print("Min :", df["rating"].min())
+print("Max :", df["rating"].max())
+
+plt.figure(figsize=(7,4))
+
+sns.histplot(
+    df["rating"],
+    kde=True,
+    bins=20
+)
+
+plt.axvline(
+    df["rating"].min(),
+    color="red",
+    linestyle="--",
+    label=f"Min = {df['rating'].min():.2f}"
+)
+
+plt.axvline(
+    df["rating"].max(),
+    color="green",
+    linestyle="--",
+    label=f"Max = {df['rating'].max():.2f}"
+)
+
+plt.title("Distribution of Rating")
+plt.xlabel("Rating")
+plt.ylabel("Frequency")
+
+plt.legend()
+
+plt.tight_layout()
+
+plt.savefig("rating_distribution.png")
+
+plt.show()
+
+
+# ─────────────────────────────────────────────
+# Distribution du Treatment
+# ─────────────────────────────────────────────
+
+print("\nlow_medium_price")
+
+print("Min :", df["low_medium_price"].min())
+print("Max :", df["low_medium_price"].max())
+
+print(df["low_medium_price"].value_counts())
+
+plt.figure(figsize=(6,4))
+
+sns.countplot(
+    x="low_medium_price",
+    data=df
+)
+
+plt.title("Distribution of Treatment")
+
+plt.xlabel(
+    "0 = High Price    |    1 = Low/Medium Price"
+)
+
+plt.ylabel("Count")
+
+plt.tight_layout()
+
+plt.savefig("treatment_distribution.png")
+
+plt.show()

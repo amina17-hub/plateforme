@@ -34,10 +34,16 @@ class ArtisanPortfolioProtectionTest extends TestCase
             'commune' => 'Skikda',
         ]);
 
+        $this->actingAs($artisanUser)
+            ->get(route('artisan.dashboard'))
+            ->assertOk()
+            ->assertSee('id="portfolio-camera-open"', false)
+            ->assertDontSee('id="portfolio-photo"', false);
+
         $response = $this->actingAs($artisanUser)->post(route('artisan.portfolio.save'), [
             'title' => 'Mur repeint',
             'description' => 'Avant apres du chantier.',
-            'photo' => UploadedFile::fake()->image('chantier.jpg', 1600, 1200),
+            'photo' => UploadedFile::fake()->image('chantier.jpg', 2400, 1800),
         ], [
             'Accept' => 'application/json',
             'X-Requested-With' => 'XMLHttpRequest',
@@ -53,6 +59,9 @@ class ArtisanPortfolioProtectionTest extends TestCase
 
         Storage::disk('local')->assertExists($art->photo);
         $this->assertSame(route('artisan.portfolio.image', $art), $response->json('art.photoUrl'));
+
+        [$width, $height] = getimagesize(Storage::disk('local')->path($art->photo));
+        $this->assertLessThanOrEqual(1600, max($width, $height));
     }
 
     public function test_portfolio_image_route_streams_image_inline(): void

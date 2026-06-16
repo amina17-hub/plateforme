@@ -225,10 +225,16 @@
                 <div class="space-y-4">
                     <input id="portfolio-title" type="text" placeholder="Titre du travail" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-100">
                     <textarea id="portfolio-description" rows="4" placeholder="Description du travail réalisé..." class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-100"></textarea>
-                    <div>
-                        <input id="portfolio-photo" type="file" accept="image/*" capture="environment" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none file:mr-4 file:rounded-full file:border-0 file:bg-amber-600 file:px-4 file:py-2 file:text-sm file:font-bold file:text-white hover:file:bg-amber-700">
+                    <div class="rounded-3xl border border-dashed border-amber-300 bg-amber-50 p-4">
+                        <button type="button" id="portfolio-camera-open" class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-slate-800">
+                            Ouvrir la caméra
+                        </button>
+                        <div id="portfolio-photo-preview-wrapper" class="mt-4 hidden">
+                            <img id="portfolio-photo-preview" alt="Aperçu de la photo prise" class="max-h-64 w-full rounded-2xl bg-slate-950 object-contain">
+                            <p id="portfolio-photo-size" class="mt-2 text-xs font-bold text-emerald-700"></p>
+                        </div>
                         <p class="mt-2 text-xs font-semibold text-slate-500">
-                            Sur telephone, vous pouvez prendre une photo directement ou choisir une image existante.
+                            La photo doit être prise maintenant avec la caméra. Elle sera automatiquement compressée avant l'envoi.
                         </p>
                     </div>
                     <button type="button" id="add-portfolio-item" class="w-full rounded-2xl bg-amber-600 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-amber-700">
@@ -244,6 +250,29 @@
             </div>
         </div>
     </section>
+
+    <div id="portfolio-camera-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 p-4">
+        <div class="w-full max-w-3xl overflow-hidden rounded-[28px] bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                <h2 class="text-lg font-bold text-slate-900">Prendre une photo du travail</h2>
+                <button type="button" id="portfolio-camera-close" class="text-slate-500 transition hover:text-slate-900">Fermer</button>
+            </div>
+            <div class="grid gap-4 px-5 py-4 sm:grid-cols-[1.1fr_0.9fr]">
+                <div class="rounded-3xl border border-slate-200 bg-slate-50 p-3">
+                    <video id="portfolio-camera-video" autoplay playsinline muted class="min-h-72 w-full rounded-2xl bg-black object-cover"></video>
+                </div>
+                <div class="space-y-4">
+                    <div class="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                        <p id="portfolio-camera-message" class="text-sm text-slate-600">Autorisez la caméra, cadrez votre réalisation puis appuyez sur Capturer.</p>
+                    </div>
+                    <button type="button" id="portfolio-camera-capture" class="w-full rounded-2xl bg-amber-600 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-amber-700">
+                        Capturer
+                    </button>
+                    <p class="text-xs text-slate-500">La caméra fonctionne sur téléphone et ordinateur avec une connexion HTTPS.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <section id="artisan-section-requests" class="mt-6 hidden">
         <div class="rounded-[32px] border border-white/70 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur sm:p-6">
@@ -361,6 +390,9 @@ const artisanName = @json(auth()->user()->name);
 let activeChatId = "";
 let pendingChatImageDataUrl = "";
 let pendingChatImageName = "";
+let portfolioCameraStream = null;
+let portfolioCapturedPhoto = null;
+let portfolioCapturedPhotoUrl = "";
 let pendingChatVoiceDataUrl = "";
 let pendingChatVoiceMimeType = "";
 let artisanChatRecording = false;
@@ -914,14 +946,27 @@ function readBlobAsDataUrl(blob) {
     });
 }
 
-async function resizeImageFileToDataUrl(file) {
+function dataUrlToBlob(dataUrl) {
+    const [header, body] = dataUrl.split(",");
+    const mimeMatch = header.match(/data:(.*);base64/);
+    const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+    const binary = atob(body);
+    const array = new Uint8Array(binary.length);
+
+    for (let i = 0; i < binary.length; i += 1) {
+        array[i] = binary.charCodeAt(i);
+    }
+
+    return new Blob([array], { type: mimeType });
+}
+
+async function resizeImageFileToDataUrl(file, maxDimension = 1280, quality = 0.82) {
     const originalDataUrl = await readBlobAsDataUrl(file);
 
     return new Promise((resolve, reject) => {
         const image = new Image();
 
         image.onload = () => {
-            const maxDimension = 1280;
             let width = image.width;
             let height = image.height;
 
@@ -944,12 +989,17 @@ async function resizeImageFileToDataUrl(file) {
 
             context.drawImage(image, 0, 0, width, height);
             const mimeType = file.type === "image/png" ? "image/png" : "image/jpeg";
-            resolve(canvas.toDataURL(mimeType, 0.82));
+            resolve(canvas.toDataURL(mimeType, quality));
         };
 
         image.onerror = () => reject(new Error("Impossible de charger l'image."));
         image.src = originalDataUrl;
     });
+}
+
+async function resizeImageFile(file, maxDimension = 1600, quality = 0.82) {
+    const dataUrl = await resizeImageFileToDataUrl(file, maxDimension, quality);
+    return dataUrlToBlob(dataUrl);
 }
 
 async function onArtisanChatImageSelected(event) {
@@ -1697,22 +1747,137 @@ function closeArtisanImagePreview() {
     document.body.classList.remove("overflow-hidden");
 }
 
-function addPortfolioItem() {
+function stopPortfolioCamera() {
+    if (portfolioCameraStream) {
+        portfolioCameraStream.getTracks().forEach((track) => track.stop());
+        portfolioCameraStream = null;
+    }
+
+    const video = document.getElementById("portfolio-camera-video");
+
+    if (video) {
+        video.srcObject = null;
+    }
+}
+
+function closePortfolioCamera() {
+    const modal = document.getElementById("portfolio-camera-modal");
+
+    stopPortfolioCamera();
+    modal?.classList.add("hidden");
+    modal?.classList.remove("flex");
+    document.body.classList.remove("overflow-hidden");
+}
+
+async function compressPortfolioCanvas(canvas) {
+    const maxBytes = 1.5 * 1024 * 1024;
+
+    for (const quality of [0.78, 0.68, 0.58, 0.48]) {
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+
+        if (blob && (blob.size <= maxBytes || quality === 0.48)) {
+            return blob;
+        }
+    }
+
+    return null;
+}
+
+async function openPortfolioCamera() {
+    const modal = document.getElementById("portfolio-camera-modal");
+    const video = document.getElementById("portfolio-camera-video");
+    const message = document.getElementById("portfolio-camera-message");
+
+    if (!modal || !video || !message || !navigator.mediaDevices?.getUserMedia) {
+        showArtisanFeedback("La caméra n'est pas disponible. Utilisez HTTPS et un navigateur récent.", "error");
+        return;
+    }
+
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+    document.body.classList.add("overflow-hidden");
+    message.textContent = "Ouverture de la caméra...";
+
+    try {
+        portfolioCameraStream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+            },
+        });
+        video.srcObject = portfolioCameraStream;
+        await video.play();
+        message.textContent = "Cadrez votre réalisation puis appuyez sur Capturer.";
+    } catch (error) {
+        closePortfolioCamera();
+        showArtisanFeedback("Accès caméra refusé ou indisponible. Autorisez la caméra dans les réglages du navigateur.", "error");
+    }
+}
+
+async function capturePortfolioPhoto() {
+    const video = document.getElementById("portfolio-camera-video");
+
+    if (!video || !video.videoWidth || !video.videoHeight) {
+        showArtisanFeedback("La caméra n'est pas encore prête.", "error");
+        return;
+    }
+
+    const maxDimension = 1600;
+    const scale = Math.min(1, maxDimension / Math.max(video.videoWidth, video.videoHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+        showArtisanFeedback("Impossible de préparer la photo.", "error");
+        return;
+    }
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const blob = await compressPortfolioCanvas(canvas);
+
+    if (!blob) {
+        showArtisanFeedback("Impossible de compresser la photo.", "error");
+        return;
+    }
+
+    portfolioCapturedPhoto = blob;
+
+    if (portfolioCapturedPhotoUrl) {
+        URL.revokeObjectURL(portfolioCapturedPhotoUrl);
+    }
+
+    portfolioCapturedPhotoUrl = URL.createObjectURL(blob);
+    document.getElementById("portfolio-photo-preview").src = portfolioCapturedPhotoUrl;
+    document.getElementById("portfolio-photo-preview-wrapper").classList.remove("hidden");
+    document.getElementById("portfolio-photo-size").textContent =
+        `Photo prête : ${canvas.width} × ${canvas.height}px, ${(blob.size / 1024).toFixed(0)} Ko`;
+
+    closePortfolioCamera();
+    showArtisanFeedback("Photo capturée et compressée avec succès.");
+}
+
+async function addPortfolioItem() {
     const titleInput = document.getElementById("portfolio-title");
     const descriptionInput = document.getElementById("portfolio-description");
-    const photoInput = document.getElementById("portfolio-photo");
     const title = titleInput.value.trim();
     const description = descriptionInput.value.trim();
 
-    if (!title || !description || !photoInput.files || !photoInput.files[0]) {
-        showArtisanFeedback("Remplissez le titre, la description et la photo du travail.", "error");
+    if (!title || !description || !portfolioCapturedPhoto) {
+        showArtisanFeedback("Remplissez le titre et la description, puis prenez une photo avec la caméra.", "error");
         return;
     }
 
     const formData = new FormData();
     formData.append('title', title);
     formData.append('description', description);
-    formData.append('photo', photoInput.files[0]);
+
+    formData.append('photo', portfolioCapturedPhoto, `realisation-${Date.now()}.jpg`);
     formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
     fetch('/artisan/portfolio', {
@@ -1736,7 +1901,16 @@ function addPortfolioItem() {
         if (data.success) {
             titleInput.value = "";
             descriptionInput.value = "";
-            photoInput.value = "";
+            portfolioCapturedPhoto = null;
+
+            if (portfolioCapturedPhotoUrl) {
+                URL.revokeObjectURL(portfolioCapturedPhotoUrl);
+                portfolioCapturedPhotoUrl = "";
+            }
+
+            document.getElementById("portfolio-photo-preview").removeAttribute("src");
+            document.getElementById("portfolio-photo-preview-wrapper").classList.add("hidden");
+            document.getElementById("portfolio-photo-size").textContent = "";
             showArtisanFeedback("Travail enregistre avec succes.");
             loadPortfolio();
         }
@@ -1816,6 +1990,14 @@ document.getElementById("artisan-notifications-read-button")?.addEventListener("
 });
 
 document.getElementById("add-portfolio-item").addEventListener("click", addPortfolioItem);
+document.getElementById("portfolio-camera-open").addEventListener("click", openPortfolioCamera);
+document.getElementById("portfolio-camera-close").addEventListener("click", closePortfolioCamera);
+document.getElementById("portfolio-camera-capture").addEventListener("click", capturePortfolioPhoto);
+document.getElementById("portfolio-camera-modal").addEventListener("click", (event) => {
+    if (event.target.id === "portfolio-camera-modal") {
+        closePortfolioCamera();
+    }
+});
 document.getElementById("availability-prev-month").addEventListener("click", () => {
     artisanAvailabilityState.calendarCursor = new Date(artisanAvailabilityState.calendarCursor.getFullYear(), artisanAvailabilityState.calendarCursor.getMonth() - 1, 1);
     renderAvailabilityManager();
@@ -1828,9 +2010,11 @@ document.getElementById("artisan-image-preview-close").addEventListener("click",
 document.getElementById("artisan-image-preview-backdrop").addEventListener("click", closeArtisanImagePreview);
 window.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+        closePortfolioCamera();
         closeArtisanImagePreview();
     }
 });
+window.addEventListener("beforeunload", stopPortfolioCamera);
 artisanAvailabilityState.selectedDate = getLocalDateValue(new Date());
 renderAvailabilityManager();
 loadPortfolio();

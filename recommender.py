@@ -157,64 +157,7 @@ def _predict_proba_positive(model, features: pd.DataFrame, default: float = 0.5)
         return default
 
 
-def _compute_model_signals(row: pd.Series, models: dict) -> dict:
-    base = {
-        "service_type": int(row["service_type_code"]),
-        "commune": int(row["commune_code"]),
-    }
-
-    features_low = pd.DataFrame([{**base, "low_medium_price": 1}])
-    features_high = pd.DataFrame([{**base, "low_medium_price": 0}])
-    features_not_high = pd.DataFrame([{**base, "high_price": 0}])
-    features_high_price = pd.DataFrame([{**base, "high_price": 1}])
-    features_base = pd.DataFrame([base])
-
-    uplift_scores = []
-
-    if "s_learner_rf.pkl" in models:
-        uplift_scores.append(
-            _predict(models["s_learner_rf.pkl"], features_low)
-            - _predict(models["s_learner_rf.pkl"], features_high)
-        )
-
-    if "t_learner_rf_treated.pkl" in models and "t_learner_rf_control.pkl" in models:
-        uplift_scores.append(
-            _predict(models["t_learner_rf_treated.pkl"], features_low)
-            - _predict(models["t_learner_rf_control.pkl"], features_high)
-        )
-
-    if "decision_tree_regressor_s_learner.pkl" in models:
-        uplift_scores.append(
-            _predict(models["decision_tree_regressor_s_learner.pkl"], features_not_high)
-            - _predict(models["decision_tree_regressor_s_learner.pkl"], features_high_price)
-        )
-
-    if "decision_tree_regressor_t1.pkl" in models and "decision_tree_regressor_t0.pkl" in models:
-        uplift_scores.append(
-            _predict(models["decision_tree_regressor_t1.pkl"], features_not_high)
-            - _predict(models["decision_tree_regressor_t0.pkl"], features_high_price)
-        )
-
-    if "decision_tree_classifier.pkl" in models:
-        uplift_scores.append(
-            _predict(models["decision_tree_classifier.pkl"], features_not_high)
-            - _predict(models["decision_tree_classifier.pkl"], features_high_price)
-        )
-
-    if "random_forest_classifier.pkl" in models:
-        propensity = _predict_proba_positive(models["random_forest_classifier.pkl"], features_base)
-        uplift_scores.append((propensity - 0.5) * 0.5)
-
-    knn_prediction = 0.0
-    if "knn_regressor.pkl" in models:
-        knn_prediction = _predict(models["knn_regressor.pkl"], features_base)
-
-    model_uplift = float(sum(uplift_scores) / len(uplift_scores)) if uplift_scores else 0.0
-    return {
-        "model_uplift": model_uplift,
-        "knn_prediction": knn_prediction,
-    }
-
+    
 
 causal_logic = [
     ["Maçon", "Plâtrier / Staffeur", "Carreleur", "Peintre", "Électricien", "Plombier"],
@@ -242,7 +185,6 @@ def _build_artisan_output(row: pd.Series, median_price: float) -> dict:
         "rating": round(float(row["rating"]), 2),
         "distance_km": round(float(row["distance_km"]), 2),
         "causal_score": float(row["causal_score"]),
-        "model_uplift": round(float(row.get("model_uplift", 0.0)), 4),
         "price_category": "Bas/Moyen" if float(row["price"]) <= median_price else "Élevé",
     }
 
