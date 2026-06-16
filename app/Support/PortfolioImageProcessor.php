@@ -19,13 +19,13 @@ class PortfolioImageProcessor
 
         $image = $this->applyOrientation($image, $file);
         $image = $this->normalizeCanvas($image);
-        $image = $this->resizeImage($image, 1800, 1800);
+        $image = $this->resizeImage($image, 1600, 1600);
         $this->applyWatermark($image, $artisanName);
 
         $path = 'portfolio/' . Str::uuid() . '.jpg';
 
         ob_start();
-        imagejpeg($image, null, 84);
+        imagejpeg($image, null, 80);
         $binary = ob_get_clean();
 
         if ($binary === false) {
