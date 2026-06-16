@@ -1,271 +1,90 @@
 <?php
 
-namespace Tests\Feature;
+namespace App\Http\Controllers;
 
 use App\Models\Artisan;
 use App\Models\ArtisanAvailability;
-use App\Models\Reservation;
-use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
-use Tests\TestCase;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
-class ArtisanAvailabilityControllerTest extends TestCase
+class ArtisanAvailabilityController extends Controller
 {
-    use RefreshDatabase;
-
-    public function test_artisan_can_mark_a_future_day_as_available(): void
+    public function index(Request $request): JsonResponse
     {
-        $artisanUser = User::create([
-            'name' => 'Artisan Test',
-            'email' => 'artisan-availability@example.com',
-            'password' => Hash::make('secret123'),
-            'role' => 'artisan',
-        ]);
+        $artisan = $request->user()->artisan;
+        abort_unless($artisan, 404);
 
-        $artisan = Artisan::create([
-            'user_id' => $artisanUser->id,
-            'name' => 'Artisan Test',
-            'service_type' => 'Plomberie',
-            'city' => 'Skikda',
-            'commune' => 'Skikda',
-        ]);
-
-        $response = $this->actingAs($artisanUser)->putJson(route('artisan.availability.upsert'), [
-            'available_date' => now()->addDays(2)->toDateString(),
-            'is_available' => true,
-        ]);
-
-        $response
-            ->assertOk()
-            ->assertJson([
-                'success' => true,
-            ]);
-
-        $this->assertDatabaseHas('artisan_availabilities', [
-            'artisan_id' => $artisan->id,
-            'available_date' => now()->addDays(2)->toDateString(),
-            'is_available' => true,
-        ]);
+        return response()->json($this->getAvailabilityPayload($artisan));
     }
 
-    public function test_client_can_only_book_an_available_day(): void
+    public function show(Artisan $artisan): JsonResponse
     {
-        $artisanUser = User::create([
-            'name' => 'Artisan Reservation',
-            'email' => 'artisan-reservation@example.com',
-            'password' => Hash::make('secret123'),
-            'role' => 'artisan',
+        return response()->json($this->getAvailabilityPayload($artisan));
+    }
+
+    public function upsert(Request $request): JsonResponse
+    {
+        $artisan = $request->user()->artisan;
+        abort_unless($artisan, 404);
+
+        $validated = $request->validate([
+            'available_date' => ['required', 'date', 'after_or_equal:today'],
+            'is_available' => ['required', 'boolean'],
         ]);
 
-        $clientUser = User::create([
-            'name' => 'Client Reservation',
-            'email' => 'client-reservation@example.com',
-            'password' => Hash::make('secret123'),
-            'role' => 'client',
-        ]);
+        if ((bool) $validated['is_available']) {
+            ArtisanAvailability::query()
+                ->where('artisan_id', $artisan->id)
+                ->whereDate('available_date', $validated['available_date'])
+                ->delete();
 
-        $artisan = Artisan::create([
-            'user_id' => $artisanUser->id,
-            'name' => 'Artisan Reservation',
-            'service_type' => 'Electricite',
-            'city' => 'Skikda',
-            'commune' => 'Skikda',
-        ]);
-
-        ArtisanAvailability::create([
-            'artisan_id' => $artisan->id,
-            'available_date' => now()->addDays(3)->toDateString(),
-            'is_available' => false,
-        ]);
-
-        $unavailableResponse = $this->actingAs($clientUser)->postJson(route('client.reservations.store'), [
-            'artisan_id' => $artisan->id,
-            'reservation_date' => now()->addDays(3)->toDateString(),
-            'reservation_time' => '10:00',
-            'notes' => 'Intervention rapide',
-        ]);
-
-        $unavailableResponse
-            ->assertStatus(422)
-            ->assertJson([
-                'message' => 'Cette date n\'est pas disponible chez cet artisan.',
+            return response()->json([
+                'success' => true,
+                'availability' => [
+                    'id' => null,
+                    'artisanId' => $artisan->id,
+                    'availableDate' => $validated['available_date'],
+                    'isAvailable' => true,
+                ],
             ]);
+        }
 
-        ArtisanAvailability::updateOrCreate(
+        $availability = ArtisanAvailability::updateOrCreate(
             [
                 'artisan_id' => $artisan->id,
-                'available_date' => now()->addDays(4)->toDateString(),
+                'available_date' => $validated['available_date'],
             ],
             [
-                'is_available' => true,
+                'is_available' => $validated['is_available'],
             ]
         );
 
-        $availableResponse = $this->actingAs($clientUser)->postJson(route('client.reservations.store'), [
-            'artisan_id' => $artisan->id,
-            'reservation_date' => now()->addDays(4)->toDateString(),
-            'reservation_time' => '11:00',
-            'notes' => 'Deuxieme intervention',
-        ]);
-
-        $availableResponse
-            ->assertCreated()
-            ->assertJsonPath('reservationDate', now()->addDays(4)->toDateString());
-    }
-
-    public function test_client_can_only_book_the_same_artisan_once_per_day(): void
-    {
-        $artisanUser = User::create([
-            'name' => 'Artisan Unique',
-            'email' => 'artisan-unique@example.com',
-            'password' => Hash::make('secret123'),
-            'role' => 'artisan',
-        ]);
-
-        $clientUser = User::create([
-            'name' => 'Client Unique',
-            'email' => 'client-unique@example.com',
-            'password' => Hash::make('secret123'),
-            'role' => 'client',
-        ]);
-
-        $artisan = Artisan::create([
-            'user_id' => $artisanUser->id,
-            'name' => 'Artisan Unique',
-            'service_type' => 'Plomberie',
-            'city' => 'Skikda',
-            'commune' => 'Skikda',
-        ]);
-
-        $reservationDate = now()->addDays(5)->toDateString();
-
-        $this->actingAs($clientUser)->postJson(route('client.reservations.store'), [
-            'artisan_id' => $artisan->id,
-            'reservation_date' => $reservationDate,
-            'reservation_time' => '09:00',
-        ])->assertCreated();
-
-        $this->actingAs($clientUser)->postJson(route('client.reservations.store'), [
-            'artisan_id' => $artisan->id,
-            'reservation_date' => $reservationDate,
-            'reservation_time' => '15:00',
-        ])
-            ->assertStatus(422)
-            ->assertJson([
-                'message' => 'Vous avez deja reserve cet artisan pour cette date.',
-            ]);
-
-        $this->assertDatabaseCount('reservations', 1);
-    }
-
-    public function test_client_cannot_cancel_a_confirmed_reservation(): void
-    {
-        $artisanUser = User::create([
-            'name' => 'Artisan Confirm',
-            'email' => 'artisan-confirm@example.com',
-            'password' => Hash::make('secret123'),
-            'role' => 'artisan',
-        ]);
-
-        $clientUser = User::create([
-            'name' => 'Client Confirm',
-            'email' => 'client-confirm@example.com',
-            'password' => Hash::make('secret123'),
-            'role' => 'client',
-        ]);
-
-        $artisan = Artisan::create([
-            'user_id' => $artisanUser->id,
-            'name' => 'Artisan Confirm',
-            'service_type' => 'Plomberie',
-            'city' => 'Skikda',
-            'commune' => 'Skikda',
-        ]);
-
-        $reservation = Reservation::create([
-            'client_user_id' => $clientUser->id,
-            'artisan_id' => $artisan->id,
-            'artisan_user_id' => $artisanUser->id,
-            'client_name' => $clientUser->name,
-            'artisan_name' => $artisan->name,
-            'service_type' => $artisan->service_type,
-            'city' => $artisan->commune,
-            'quoted_price' => null,
-            'reservation_date' => now()->addDays(6)->toDateString(),
-            'reservation_time' => '10:00',
-            'notes' => 'Test',
-            'status' => 'confirmee',
-        ]);
-
-        $this->actingAs($clientUser)
-            ->deleteJson(route('client.reservations.destroy', $reservation))
-            ->assertStatus(409)
-            ->assertJson([
-                'message' => 'Vous ne pouvez annuler que les reservations en attente.',
-            ]);
-
-        $this->assertDatabaseHas('reservations', [
-            'id' => $reservation->id,
-            'status' => 'confirmee',
+        return response()->json([
+            'success' => true,
+            'availability' => $this->transformAvailability($availability),
         ]);
     }
 
-    public function test_client_can_cancel_pending_reservation_and_remove_it_for_artisan(): void
+    protected function getAvailabilityPayload(Artisan $artisan): array
     {
-        $artisanUser = User::create([
-            'name' => 'Artisan Pending',
-            'email' => 'artisan-pending@example.com',
-            'password' => Hash::make('secret123'),
-            'role' => 'artisan',
-        ]);
+        $availabilities = $artisan->availabilities()
+            ->whereDate('available_date', '>=', now()->toDateString())
+            ->orderBy('available_date')
+            ->get();
 
-        $clientUser = User::create([
-            'name' => 'Client Pending',
-            'email' => 'client-pending@example.com',
-            'password' => Hash::make('secret123'),
-            'role' => 'client',
-        ]);
+        return $availabilities
+            ->map(fn (ArtisanAvailability $availability) => $this->transformAvailability($availability))
+            ->values()
+            ->all();
+    }
 
-        $artisan = Artisan::create([
-            'user_id' => $artisanUser->id,
-            'name' => 'Artisan Pending',
-            'service_type' => 'Electricite',
-            'city' => 'Skikda',
-            'commune' => 'Skikda',
-        ]);
-
-        $reservation = Reservation::create([
-            'client_user_id' => $clientUser->id,
-            'artisan_id' => $artisan->id,
-            'artisan_user_id' => $artisanUser->id,
-            'client_name' => $clientUser->name,
-            'artisan_name' => $artisan->name,
-            'service_type' => $artisan->service_type,
-            'city' => $artisan->commune,
-            'quoted_price' => null,
-            'reservation_date' => now()->addDays(7)->toDateString(),
-            'reservation_time' => '11:00',
-            'notes' => 'A annuler',
-            'status' => 'en_attente',
-        ]);
-
-        $this->actingAs($clientUser)
-            ->deleteJson(route('client.reservations.destroy', $reservation))
-            ->assertOk()
-            ->assertJson([
-                'success' => true,
-            ]);
-
-        $this->assertDatabaseMissing('reservations', [
-            'id' => $reservation->id,
-        ]);
-
-        $artisanReservations = $this->actingAs($artisanUser)
-            ->getJson(route('artisan.reservations.index'))
-            ->assertOk()
-            ->json();
-
-        $this->assertCount(0, $artisanReservations);
+    protected function transformAvailability(ArtisanAvailability $availability): array
+    {
+        return [
+            'id' => $availability->id,
+            'artisanId' => $availability->artisan_id,
+            'availableDate' => optional($availability->available_date)->format('Y-m-d'),
+            'isAvailable' => (bool) $availability->is_available,
+        ];
     }
 }
