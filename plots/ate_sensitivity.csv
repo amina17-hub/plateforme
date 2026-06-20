@@ -1,0 +1,245 @@
+﻿Combinaison,Consensus_ATE
+IPW-XGB + S-XGB,0.0267
+IPW-XGB + T-XGB,0.0264
+IPW-XGB + S-RF,0.0263
+IPW-XGB + T-DT,0.0253
+IPW-XGB + S-DT,0.0248
+IPW-XGB + T-RF,0.0244
+IPW-XGB + S-XGB + T-XGB,0.024
+IPW-XGB + S-RF + T-XGB,0.0237
+IPW-XGB + S-XGB + T-DT,0.0233
+IPW-XGB + S-RF + T-DT,0.023
+IPW-XGB + S-DT + T-XGB,0.0228
+IPW-XGB + S-XGB + T-RF,0.0227
+IPW-XGB + S-RF + T-RF,0.0225
+IPW-XGB + S-DT + T-DT,0.022
+IPW-DT + S-XGB,0.0218
+IPW-XGB + S-DT + T-RF,0.0215
+IPW-DT + T-XGB,0.0214
+IPW-DT + S-RF,0.0214
+IPW-DT + S-XGB + T-XGB,0.0207
+IPW-DT + S-RF + T-XGB,0.0204
+IPW-DT + T-DT,0.0203
+IPW-DT + S-XGB + T-DT,0.02
+IPW-DT + S-DT,0.0199
+IPW-DT + S-RF + T-DT,0.0197
+IPW-DT + T-RF,0.0195
+IPW-DT + S-DT + T-XGB,0.0195
+IPW-DT + S-XGB + T-RF,0.0194
+IPW-DT + S-RF + T-RF,0.0192
+S-XGB + T-XGB,0.01899999938905239
+IPW-RF + S-XGB,0.0189
+IPW-XGB + S-XGB + Backdoor,0.0188
+IPW-XGB + S-XGB + T-XGB + Backdoor,0.0188
+IPW-RF + S-XGB + T-XGB,0.0188
+IPW-DT + S-DT + T-DT,0.0187
+IPW-XGB + S-RF + Backdoor,0.0186
+S-RF + T-XGB,0.0186
+IPW-RF + T-XGB,0.0186
+IPW-XGB + S-RF + T-XGB + Backdoor,0.0186
+IPW-XGB + T-XGB + Backdoor,0.0186
+IPW-XGB + Backdoor,0.0186
+IPW-RF + S-RF + T-XGB,0.0185
+IPW-RF + S-RF,0.0185
+IPW-XGB + S-XGB + T-DT + Backdoor,0.0182
+IPW-DT + S-DT + T-RF,0.0182
+IPW-RF + S-XGB + T-DT,0.0181
+IPW-XGB + S-RF + T-DT + Backdoor,0.018
+IPW-XGB + T-DT + Backdoor,0.0179
+IPW-XGB + S-DT + T-XGB + Backdoor,0.0179
+S-XGB + T-DT,0.0179
+IPW-RF + S-RF + T-DT,0.0178
+IPW-XGB + S-XGB + T-RF + Backdoor,0.0178
+IPW-RF + S-DT + T-XGB,0.0176
+IPW-XGB + S-RF + T-RF + Backdoor,0.0176
+IPW-XGB + S-XGB + T-XGB + Matching,0.0176
+IPW-XGB + S-DT + Backdoor,0.0176
+IPW-RF + S-XGB + T-RF,0.0175
+IPW-RF + T-DT,0.0174
+S-RF + T-DT,0.0174
+IPW-XGB + S-RF + T-XGB + Matching,0.0174
+IPW-XGB + S-DT + T-DT + Backdoor,0.0173
+IPW-RF + S-RF + T-RF,0.0173
+IPW-XGB + T-RF + Backdoor,0.0173
+IPW-XGB + S-XGB + Matching,0.0172
+S-DT + T-XGB,0.0171
+S-XGB + T-RF,0.0171
+IPW-RF + S-DT,0.017
+IPW-XGB + T-XGB + Matching,0.017
+IPW-XGB + S-XGB + T-DT + Matching,0.017
+IPW-XGB + S-RF + Matching,0.0169
+IPW-XGB + S-DT + T-RF + Backdoor,0.0169
+IPW-RF + S-DT + T-DT,0.0168
+IPW-XGB + S-RF + T-DT + Matching,0.0168
+IPW-RF + T-RF,0.0166
+IPW-XGB + S-XGB + T-RF + Matching,0.0166
+IPW-XGB + S-DT + T-XGB + Matching,0.0166
+S-RF + T-RF,0.0166
+IPW-XGB + S-RF + T-RF + Matching,0.0164
+IPW-RF + S-DT + T-RF,0.0163
+IPW-DT + S-XGB + T-XGB + Backdoor,0.0163
+IPW-XGB + T-DT + Matching,0.0162
+IPW-XGB + Matching,0.0161
+IPW-DT + S-RF + T-XGB + Backdoor,0.0161
+IPW-XGB + S-DT + T-DT + Matching,0.0161
+IPW-XGB + S-DT + Matching,0.016
+S-DT + T-DT,0.016
+IPW-DT + S-XGB + T-DT + Backdoor,0.0158
+IPW-XGB + T-RF + Matching,0.0157
+IPW-XGB + S-DT + T-RF + Matching,0.0157
+IPW-DT + S-RF + T-DT + Backdoor,0.0156
+IPW-DT + S-XGB + Backdoor,0.0155
+IPW-DT + S-XGB + T-RF + Backdoor,0.0154
+IPW-DT + S-DT + T-XGB + Backdoor,0.0154
+IPW-DT + T-XGB + Backdoor,0.0153
+IPW-DT + S-RF + Backdoor,0.0153
+IPW-DT + S-RF + T-RF + Backdoor,0.0152
+S-DT + T-RF,0.0152
+IPW-DT + S-XGB + T-XGB + Matching,0.0151
+IPW-RF + S-XGB + T-XGB + Backdoor,0.0149
+IPW-DT + S-RF + T-XGB + Matching,0.0149
+IPW-DT + S-DT + T-DT + Backdoor,0.0148
+IPW-XGB + S-XGB + T-XGB + Matching + Backdoor,0.0147
+IPW-RF + S-RF + T-XGB + Backdoor,0.0147
+IPW-DT + T-DT + Backdoor,0.0146
+IPW-XGB + S-RF + T-XGB + Matching + Backdoor,0.0145
+IPW-DT + S-XGB + T-DT + Matching,0.0145
+IPW-DT + S-DT + T-RF + Backdoor,0.0144
+IPW-RF + S-XGB + T-DT + Backdoor,0.0143
+IPW-DT + S-RF + T-DT + Matching,0.0143
+IPW-DT + S-DT + Backdoor,0.0143
+IPW-DT + S-DT + T-XGB + Matching,0.0142
+IPW-XGB + S-XGB + T-DT + Matching + Backdoor,0.0142
+IPW-XGB + S-RF + T-DT + Matching + Backdoor,0.0141
+IPW-DT + S-XGB + T-RF + Matching,0.0141
+IPW-RF + S-RF + T-DT + Backdoor,0.0141
+IPW-RF + S-DT + T-XGB + Backdoor,0.014
+IPW-DT + T-RF + Backdoor,0.014
+IPW-XGB + S-DT + T-XGB + Matching + Backdoor,0.0139
+IPW-DT + S-XGB + Matching,0.0139
+IPW-DT + S-RF + T-RF + Matching,0.0139
+IPW-XGB + S-XGB + T-RF + Matching + Backdoor,0.0139
+IPW-RF + S-XGB + T-RF + Backdoor,0.0139
+S-XGB + T-XGB + Backdoor,0.013700000010430813
+IPW-RF + S-RF + T-RF + Backdoor,0.0137
+IPW-RF + S-XGB + T-XGB + Matching,0.0137
+IPW-DT + T-XGB + Matching,0.0137
+IPW-XGB + S-XGB + Matching + Backdoor,0.0137
+IPW-XGB + S-RF + T-RF + Matching + Backdoor,0.0137
+IPW-RF + S-XGB + Backdoor,0.0136
+IPW-DT + S-DT + T-DT + Matching,0.0136
+IPW-DT + Backdoor,0.0136
+IPW-DT + S-RF + Matching,0.0136
+IPW-XGB + S-RF + Matching + Backdoor,0.0135
+IPW-XGB + S-DT + T-DT + Matching + Backdoor,0.0135
+IPW-XGB + T-XGB + Matching + Backdoor,0.0135
+IPW-RF + S-RF + T-XGB + Matching,0.0135
+IPW-RF + S-DT + T-DT + Backdoor,0.0134
+IPW-RF + T-XGB + Backdoor,0.0134
+IPW-RF + S-RF + Backdoor,0.0134
+S-RF + T-XGB + Backdoor,0.0134
+IPW-DT + S-DT + T-RF + Matching,0.0132
+IPW-XGB + S-DT + T-RF + Matching + Backdoor,0.0132
+IPW-RF + S-XGB + T-DT + Matching,0.0131
+IPW-RF + S-DT + T-RF + Backdoor,0.013
+IPW-XGB + T-DT + Matching + Backdoor,0.013
+IPW-DT + T-DT + Matching,0.0129
+S-XGB + T-DT + Backdoor,0.0129
+IPW-RF + S-RF + T-DT + Matching,0.0129
+IPW-RF + T-DT + Backdoor,0.0127
+S-RF + T-DT + Backdoor,0.0127
+IPW-DT + S-XGB + T-XGB + Matching + Backdoor,0.0127
+IPW-DT + S-DT + Matching,0.0127
+IPW-XGB + S-DT + Matching + Backdoor,0.0127
+IPW-RF + S-DT + T-XGB + Matching,0.0127
+IPW-RF + S-XGB + T-RF + Matching,0.0127
+IPW-XGB + T-RF + Matching + Backdoor,0.0125
+IPW-RF + S-RF + T-RF + Matching,0.0125
+IPW-DT + S-RF + T-XGB + Matching + Backdoor,0.0125
+S-XGB + T-RF + Backdoor,0.0124
+S-DT + T-XGB + Backdoor,0.0124
+IPW-RF + S-DT + Backdoor,0.0124
+IPW-DT + T-RF + Matching,0.0124
+IPW-RF + S-DT + T-DT + Matching,0.0122
+IPW-DT + S-XGB + T-DT + Matching + Backdoor,0.0122
+S-RF + T-RF + Backdoor,0.0121
+IPW-DT + S-RF + T-DT + Matching + Backdoor,0.0121
+IPW-RF + T-RF + Backdoor,0.0121
+S-XGB + T-XGB + Matching,0.012
+IPW-RF + S-XGB + Matching,0.012
+IPW-DT + S-DT + T-XGB + Matching + Backdoor,0.0119
+IPW-DT + S-XGB + T-RF + Matching + Backdoor,0.0119
+IPW-XGB + Matching + Backdoor,0.0118
+IPW-DT + S-RF + T-RF + Matching + Backdoor,0.0118
+IPW-RF + S-DT + T-RF + Matching,0.0118
+S-RF + T-XGB + Matching,0.0118
+IPW-RF + T-XGB + Matching,0.0118
+IPW-RF + S-RF + Matching,0.0117
+S-DT + T-DT + Backdoor,0.0117
+IPW-DT + S-DT + T-DT + Matching + Backdoor,0.0115
+IPW-RF + S-XGB + T-XGB + Matching + Backdoor,0.0115
+IPW-RF + S-RF + T-XGB + Matching + Backdoor,0.0114
+S-XGB + T-DT + Matching,0.0113
+IPW-DT + S-XGB + Matching + Backdoor,0.0112
+IPW-DT + S-DT + T-RF + Matching + Backdoor,0.0112
+IPW-DT + Matching,0.0112
+S-DT + T-RF + Backdoor,0.0112
+S-XGB + Backdoor,0.01119999960064888
+IPW-RF + S-XGB + T-DT + Matching + Backdoor,0.0111
+IPW-RF + T-DT + Matching,0.011
+IPW-DT + T-XGB + Matching + Backdoor,0.011
+S-RF + T-DT + Matching,0.011
+IPW-DT + S-RF + Matching + Backdoor,0.011
+IPW-RF + S-RF + T-DT + Matching + Backdoor,0.0109
+T-XGB + Backdoor,0.01080000028014183
+S-RF + Backdoor,0.0108
+IPW-RF + S-DT + T-XGB + Matching + Backdoor,0.0108
+IPW-RF + S-XGB + T-RF + Matching + Backdoor,0.0108
+IPW-RF + Backdoor,0.0108
+IPW-RF + S-DT + Matching,0.0108
+S-DT + T-XGB + Matching,0.0108
+S-XGB + T-RF + Matching,0.0108
+IPW-RF + S-RF + T-RF + Matching + Backdoor,0.0106
+IPW-DT + T-DT + Matching + Backdoor,0.0105
+IPW-RF + T-RF + Matching,0.0105
+S-RF + T-RF + Matching,0.0105
+IPW-RF + S-DT + T-DT + Matching + Backdoor,0.0104
+IPW-DT + S-DT + Matching + Backdoor,0.0103
+IPW-DT + T-RF + Matching + Backdoor,0.0101
+S-DT + T-DT + Matching,0.0101
+IPW-RF + S-DT + T-RF + Matching + Backdoor,0.01
+T-DT + Backdoor,0.0098
+S-XGB + T-XGB + Matching + Backdoor,0.0098
+IPW-RF + S-XGB + Matching + Backdoor,0.0098
+S-RF + T-XGB + Matching + Backdoor,0.0096
+IPW-RF + T-XGB + Matching + Backdoor,0.0096
+IPW-RF + S-RF + Matching + Backdoor,0.0096
+S-DT + T-RF + Matching,0.0095
+S-XGB + T-DT + Matching + Backdoor,0.0093
+S-DT + Backdoor,0.0093
+T-RF + Backdoor,0.009
+S-RF + T-DT + Matching + Backdoor,0.009
+IPW-RF + T-DT + Matching + Backdoor,0.009
+S-XGB + T-RF + Matching + Backdoor,0.0089
+S-DT + T-XGB + Matching + Backdoor,0.0089
+IPW-RF + S-DT + Matching + Backdoor,0.0088
+S-XGB + Matching,0.0088
+S-RF + T-RF + Matching + Backdoor,0.0086
+IPW-RF + T-RF + Matching + Backdoor,0.0086
+IPW-DT + Matching + Backdoor,0.0085
+T-XGB + Matching,0.0084
+IPW-RF + Matching,0.0084
+S-RF + Matching,0.0084
+S-DT + T-DT + Matching + Backdoor,0.0083
+S-DT + T-RF + Matching + Backdoor,0.0079
+T-DT + Matching,0.0073
+S-XGB + Matching + Backdoor,0.0069
+S-DT + Matching,0.0069
+T-XGB + Matching + Backdoor,0.0066
+IPW-RF + Matching + Backdoor,0.0066
+S-RF + Matching + Backdoor,0.0066
+T-RF + Matching,0.0065
+T-DT + Matching + Backdoor,0.0059
+S-DT + Matching + Backdoor,0.0056
+T-RF + Matching + Backdoor,0.0054
+Matching + Backdoor,0.0006

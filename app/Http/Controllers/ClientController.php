@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Artisan;
+use App\Support\SkikdaCommunes;
 
 class ClientController extends Controller
 {
@@ -15,13 +16,13 @@ class ClientController extends Controller
             ->distinct()
             ->orderBy('service_type')
             ->pluck('service_type');
-        $communes = Artisan::query()
+        $communes = SkikdaCommunes::filter(Artisan::query()
             ->whereNotNull('commune')
             ->where('commune', '!=', '')
             ->select('commune')
             ->distinct()
             ->orderBy('commune')
-            ->pluck('commune');
+            ->pluck('commune'));
         $currentUserName = auth()->user()->name;
         return view('client.dashboard', compact('services', 'communes', 'currentUserName'));
     }

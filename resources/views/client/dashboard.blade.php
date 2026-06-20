@@ -10,7 +10,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<link rel="icon" type="image/png" href="/favicon.png">
 <title>Espace Client</title>
 </head>
 
@@ -3019,7 +3018,7 @@ function loadProfilesSearchHistory() {
     }
 
     try {
-        state.profilesSearchHistory = JSON.parse(stored) || [];
+        state.profilesSearchHistory = (JSON.parse(stored) || []).map(normalizeProfilesSearchHistoryEntry).filter(Boolean);
     } catch (error) {
         state.profilesSearchHistory = [];
     }
@@ -3120,16 +3119,51 @@ function renderFavoriteArtisans() {
         : '<div class="rounded-xl bg-white p-3 text-sm text-slate-500">Aucun favori pour le moment.</div>';
 }
 
-function addProfilesSearchHistoryEntry(query) {
+function normalizeProfilesSearchHistoryEntry(entry) {
+    if (typeof entry === "string") {
+        const query = entry.trim();
+        return query ? { query: query, type: isKnownServiceQuery(query) ? "service" : "name" } : null;
+    }
+
+    if (!entry || typeof entry !== "object") {
+        return null;
+    }
+
+    const query = String(entry.query || "").trim();
+    if (!query) {
+        return null;
+    }
+
+    const type = entry.type === "service" || entry.type === "name"
+        ? entry.type
+        : (isKnownServiceQuery(query) ? "service" : "name");
+
+    return { query: query, type: type };
+}
+
+function isKnownServiceQuery(query) {
+    if (!dom.service) {
+        return false;
+    }
+
+    const normalizedQuery = query.trim().toLowerCase();
+    return Array.from(dom.service.options).some(function (option) {
+        return option.value.trim().toLowerCase() === normalizedQuery;
+    });
+}
+
+function addProfilesSearchHistoryEntry(query, type = "name") {
     const trimmedQuery = query.trim();
     if (!trimmedQuery) {
         return;
     }
 
+    const entryType = type === "service" || type === "name" ? type : "name";
     state.profilesSearchHistory = state.profilesSearchHistory.filter(function (item) {
-        return item.toLowerCase() !== trimmedQuery.toLowerCase();
+        const entry = normalizeProfilesSearchHistoryEntry(item);
+        return entry && entry.query.toLowerCase() !== trimmedQuery.toLowerCase();
     });
-    state.profilesSearchHistory.unshift(trimmedQuery);
+    state.profilesSearchHistory.unshift({ query: trimmedQuery, type: entryType });
     if (state.profilesSearchHistory.length > 5) {
         state.profilesSearchHistory.length = 5;
     }
@@ -3148,8 +3182,13 @@ function renderSearchHistory() {
     }
 
     dom.profilesSearchHistoryList.innerHTML = state.profilesSearchHistory.length
-        ? state.profilesSearchHistory.map(function (term) {
-            return '<button type="button" data-history-query="' + escapeHtml(term) + '" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm font-medium text-slate-900 transition hover:border-slate-300 hover:bg-slate-50">' + escapeHtml(term) + '</button>';
+        ? state.profilesSearchHistory.map(function (item) {
+            const entry = normalizeProfilesSearchHistoryEntry(item);
+            if (!entry) {
+                return "";
+            }
+
+            return '<button type="button" data-history-query="' + escapeHtml(entry.query) + '" data-history-type="' + escapeHtml(entry.type) + '" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm font-medium text-slate-900 transition hover:border-slate-300 hover:bg-slate-50">' + escapeHtml(entry.query) + '</button>';
         }).join("")
         : '<div class="rounded-xl bg-white p-3 text-sm text-slate-500">Aucune recherche recente.</div>';
 
@@ -3165,7 +3204,7 @@ function renderSearchHistory() {
 async function searchProfilesByName() {
     const query = state.profilesSearchQuery.trim();
     if (query) {
-        addProfilesSearchHistoryEntry(query);
+        addProfilesSearchHistoryEntry(query, "name");
         renderSearchHistory();
     }
 
@@ -3194,9 +3233,7 @@ async function searchProfilesByName() {
     if (query || serviceQuery || state.profilesSearchCommune) {
         state.resultsTitle = "Recherche personnalisee";
     } else {
-        state.resultsTitle = state.activeServiceType
-            ? 'Recherche par filtres dans ' + state.activeServiceType
-            : 'Recherche par filtres';
+        state.resultsTitle = 'Recherche par filtres';
     }
     renderAll();
 
@@ -3207,8 +3244,8 @@ async function searchProfilesByName() {
             params.set('name', query);
         }
 
-        if (serviceQuery || state.activeServiceType) {
-            params.set('service_type', serviceQuery || state.activeServiceType);
+        if (serviceQuery) {
+            params.set('service_type', serviceQuery);
         }
 
         if (state.profilesSearchCommune) {
@@ -3261,7 +3298,7 @@ async function searchProfilesByName() {
             }
             state.resultsTitle = "Resultats pour " + titleParts.join(", ");
         } else {
-            state.resultsTitle = 'Resultats filtres' + (state.activeServiceType ? ' dans ' + state.activeServiceType : '');
+            state.resultsTitle = 'Resultats filtres';
         }
         state.profilesSearchLoading = false;
 
@@ -3310,7 +3347,7 @@ async function searchByService() {
         }
     }
 
-    addProfilesSearchHistoryEntry(service);
+    addProfilesSearchHistoryEntry(service, "service");
     renderSearchHistory();
 
     state.isLoading = true;
@@ -3343,6 +3380,8 @@ async function searchByService() {
         state.showComplementaryServices = false;
         state.activeServiceType = service;
         state.profilesSearchQuery = "";
+        state.profilesSearchService = "";
+        state.profilesSearchCommune = "";
         state.profilesSearchLoading = false;
         state.resultsTitle = "Profils recommandes pour " + service;
         state.searchSummary = "Recherche intelligente locale";
@@ -3351,6 +3390,14 @@ async function searchByService() {
 
         if (dom.profilesSearch) {
             dom.profilesSearch.value = "";
+        }
+
+        if (dom.profilesService) {
+            dom.profilesService.value = "";
+        }
+
+        if (dom.profilesCommune) {
+            dom.profilesCommune.value = "";
         }
 
         if (state.artisans.length > 0) {
@@ -3619,6 +3666,20 @@ function initEvents() {
 
     dom.profilesSearch.addEventListener("input", function (event) {
         state.profilesSearchQuery = event.target.value;
+
+        if (state.profilesSearchQuery.trim()) {
+            state.profilesSearchService = "";
+            state.profilesSearchCommune = "";
+
+            if (dom.profilesService) {
+                dom.profilesService.value = "";
+            }
+
+            if (dom.profilesCommune) {
+                dom.profilesCommune.value = "";
+            }
+        }
+
         if (profilesSearchTimeout) {
             window.clearTimeout(profilesSearchTimeout);
         }
@@ -3646,9 +3707,33 @@ function initEvents() {
             switch (event.target.id) {
                 case "profiles-service":
                     state.profilesSearchService = value;
+                    if (value) {
+                        state.profilesSearchQuery = "";
+                        state.profilesSearchCommune = "";
+
+                        if (dom.profilesSearch) {
+                            dom.profilesSearch.value = "";
+                        }
+
+                        if (dom.profilesCommune) {
+                            dom.profilesCommune.value = "";
+                        }
+                    }
                     break;
                 case "profiles-commune":
                     state.profilesSearchCommune = value;
+                    if (value) {
+                        state.profilesSearchQuery = "";
+                        state.profilesSearchService = "";
+
+                        if (dom.profilesSearch) {
+                            dom.profilesSearch.value = "";
+                        }
+
+                        if (dom.profilesService) {
+                            dom.profilesService.value = "";
+                        }
+                    }
                     break;
                 case "profiles-min-price":
                     state.profilesSearchMinPrice = value;
@@ -3745,12 +3830,41 @@ function initEvents() {
             }
 
             const query = button.dataset.historyQuery;
-            dom.profilesSearch.value = query;
-            state.profilesSearchQuery = query;
             setActiveSection("profiles");
             const menu = button.closest("details");
             if (menu) {
                 menu.removeAttribute("open");
+            }
+
+            if (button.dataset.historyType === "service" || isKnownServiceQuery(query)) {
+                state.profilesSearchQuery = "";
+                state.profilesSearchService = "";
+                state.profilesSearchCommune = "";
+                if (dom.profilesSearch) {
+                    dom.profilesSearch.value = "";
+                }
+                if (dom.profilesService) {
+                    dom.profilesService.value = "";
+                }
+                if (dom.profilesCommune) {
+                    dom.profilesCommune.value = "";
+                }
+                if (dom.service) {
+                    dom.service.value = query;
+                }
+                searchByService();
+                return;
+            }
+
+            dom.profilesSearch.value = query;
+            state.profilesSearchQuery = query;
+            state.profilesSearchService = "";
+            state.profilesSearchCommune = "";
+            if (dom.profilesService) {
+                dom.profilesService.value = "";
+            }
+            if (dom.profilesCommune) {
+                dom.profilesCommune.value = "";
             }
             searchProfilesByName();
         });
@@ -3838,6 +3952,7 @@ async function init() {
     initGeolocation();
     loadProfilesSearchHistory();
     loadFavoriteArtisans();
+    renderSearchHistory();
     renderAll();
 
     if (params.toString()) {

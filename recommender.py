@@ -12,18 +12,14 @@ BASE_DIR = Path(__file__).resolve().parent
 DATASET_PATH = BASE_DIR / "storage" / "skikda_unified_dataset2.csv"
 DEFAULT_MODELS_DIR = BASE_DIR / "models"
 
+# Liste mise à jour avec les vrais noms de fichiers générés par causalinference.py
 MODEL_FILENAMES = [
-    "decision_tree_classifier.pkl",
-    "random_forest_classifier.pkl",
-    "s_learner_rf.pkl",
-    "t_learner_rf_control.pkl",
-    "t_learner_rf_treated.pkl",
-    "decision_tree_regressor_s_learner.pkl",
-    "decision_tree_regressor_t0.pkl",
-    "decision_tree_regressor_t1.pkl",
-    "knn_regressor.pkl",
     "ate_results.pkl",
     "consensus_ate.pkl",
+    "xgb_classifier.pkl",
+    "s_learner_xgb.pkl",
+    "t_learner_xgb_treated.pkl",
+    "t_learner_xgb_control.pkl",
 ]
 
 
@@ -157,8 +153,6 @@ def _predict_proba_positive(model, features: pd.DataFrame, default: float = 0.5)
         return default
 
 
-    
-
 causal_logic = [
     ["Maçon", "Plâtrier / Staffeur", "Carreleur", "Peintre", "Électricien", "Plombier"],
     ["Chauffagiste", "Climatisation / Frigoriste", "Réparation Électroménager"],
@@ -219,8 +213,11 @@ def _score_artisans(
     artisans["rating_score"] = _normalize(artisans["rating"])
     artisans["price_score"] = _normalize(artisans["price"], inverse=True)
     artisans["distance_score"] = _normalize(artisans["distance_km"], inverse=True)
+    
+    # Application du bonus causal si le prix est inférieur ou égal au prix médian (Traitement T=1)
     artisans["causal_bonus"] = artisans["price"].apply(lambda price: max(consensus_ate, 0.0) if float(price) <= median_price else 0.0)
 
+    # Calcul du score combiné
     artisans["causal_score"] = (
         artisans["rating_score"] * 0.35
         + artisans["price_score"] * 0.20
@@ -291,6 +288,8 @@ def full_recommendation(service_type: str, client_lat: float, client_lon: float,
     df = _load_dataset()
     models = _load_models()
     requested_service = service_type.strip()
+    
+    # On récupère la valeur consensus stockée dans le dictionnaire ou le fichier direct
     consensus_ate = models.get("consensus_ate.pkl", 0.0)
     requested_service_normalized = _normalize_text(requested_service)
 

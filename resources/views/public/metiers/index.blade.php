@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ asset('css/home-professional.css') }}?v={{ time() }}">    
+    <link rel="stylesheet" href="{{ asset('css/home-professional.css') }}">
 </head>
 <body class="home-page">
     <div class="page-orb page-orb--teal" aria-hidden="true"></div>
@@ -268,44 +268,9 @@
                         <label for="register-commune" class="field-label">Commune</label>
                         <select id="register-commune" name="commune" class="form-control" required>
                             <option value="">Choisir une commune de Skikda</option>
-                            <option value="Aïn Bouziane">Aïn Bouziane</option>
-                            <option value="Aïn Charchar">Aïn Charchar</option>
-                            <option value="Aïn Kechra">Aïn Kechra</option>
-                            <option value="Aïn Zouit">Aïn Zouit</option>
-                            <option value="Azzaba">Azzaba</option>
-                            <option value="Bekkouche Lakhdar">Bekkouche Lakhdar</option>
-                            <option value="Ben Azzouz">Ben Azzouz</option>
-                            <option value="Beni Bechir">Beni Bechir</option>
-                            <option value="Beni Oulbane">Beni Oulbane</option>
-                            <option value="Beni Zid">Beni Zid</option>
-                            <option value="Bin El Ouiden">Bin El Ouiden</option>
-                            <option value="Bouchtata">Bouchtata</option>
-                            <option value="Cheraïa">Cheraïa</option>
-                            <option value="Collo">Collo</option>
-                            <option value="Djendel Saadi Mohamed">Djendel Saadi Mohamed</option>
-                            <option value="El Ghedir">El Ghedir</option>
-                            <option value="El Hadaiek">El Hadaiek</option>
-                            <option value="El Harrouch">El Harrouch</option>
-                            <option value="El Marsa">El Marsa</option>
-                            <option value="Emdjez Edchich">Emdjez Edchich</option>
-                            <option value="Es Sebt">Es Sebt</option>
-                            <option value="Filfila">Filfila</option>
-                            <option value="Hamadi Krouma">Hamadi Krouma</option>
-                            <option value="Kanoua">Kanoua</option>
-                            <option value="Kerkera">Kerkera</option>
-                            <option value="Kheneg Mayoum">Kheneg Mayoum</option>
-                            <option value="Oued Zehour">Oued Zehour</option>
-                            <option value="Ouldja Boulballout">Ouldja Boulballout</option>
-                            <option value="Oum Toub">Oum Toub</option>
-                            <option value="Ouled Attia">Ouled Attia</option>
-                            <option value="Ouled Hbaba">Ouled Hbaba</option>
-                            <option value="Ramdane Djamel">Ramdane Djamel</option>
-                            <option value="Salah Bouchaour">Salah Bouchaour</option>
-                            <option value="Sidi Mezghiche">Sidi Mezghiche</option>
-                            <option value="Skikda">Skikda</option>
-                            <option value="Tamalous">Tamalous</option>
-                            <option value="Zerdaza">Zerdaza</option>
-                            <option value="Zitouna">Zitouna</option>
+                            @foreach($communes as $commune)
+                                <option value="{{ $commune }}">{{ $commune }}</option>
+                            @endforeach
                         </select>
                     </div>
 
